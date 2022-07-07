@@ -12,6 +12,10 @@ struct ContentView: View {
     @State private var newWord = ""
     @State private var usedWords = [String]()
     
+    @State private var alertTitle = ""
+    @State private var alertMessage = ""
+    @State private var showingAlert = false
+    
     var body: some View {
         NavigationView {
             List {
@@ -33,6 +37,13 @@ struct ContentView: View {
                 addWord()
             }
             .onAppear(perform: startGame)
+            .alert(alertTitle, isPresented: $showingAlert) {
+                Button("OK") {
+                    newWord = ""
+                }
+            } message: {
+                Text(alertMessage)
+            }
         }
     }
     
@@ -40,7 +51,7 @@ struct ContentView: View {
         let clearWord = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard clearWord.count > 1 else { return }
         
-        // more validation
+        guard isReal(word: clearWord) && isOrigin(word: clearWord) && isPossible(word: clearWord) else { return }
         
         withAnimation {
             usedWords.insert(clearWord, at: 0)
@@ -58,6 +69,49 @@ struct ContentView: View {
         }
         
         fatalError("Application cannot find start.txt file with starting words")
+    }
+    
+    private func isOrigin(word: String) -> Bool {
+        if !usedWords.contains(word) {
+            return true
+        } else {
+            alertTitle = "Your word is already used"
+            alertMessage = "Be more original!"
+            showingAlert = true
+            return false
+        }
+    }
+    
+    private func isPossible(word: String) -> Bool {
+        var tempWord = rootWord
+        
+        for letter in newWord {
+            if let index = tempWord.firstIndex(of: letter) {
+                tempWord.remove(at: index)
+            } else {
+                alertTitle = "Your word is invalid"
+                alertMessage = "Cannot create word \(word) from \(rootWord)"
+                showingAlert = true
+                return false
+            }
+        }
+        
+        return true
+    }
+    
+    private func isReal(word: String) -> Bool {
+        let checker = UITextChecker()
+        let range = NSRange(location: 0, length: word.utf16.count)
+        let mispelledRange = checker.rangeOfMisspelledWord(in: word, range: range, startingAt: 0, wrap: false, language: "en")
+        
+        if mispelledRange.location == NSNotFound {
+            return true
+        } else {
+            alertTitle = "Your word does not exist"
+            alertMessage = "You are not allowed to invent new words"
+            showingAlert = true
+            return false
+        }
     }
 }
 
