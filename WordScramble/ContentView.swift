@@ -28,11 +28,11 @@ struct ContentView: View {
                     }
                 }
             }
-            
-        }
-        .navigationTitle(rootWord)
-        .onSubmit {
-            addWord()
+            .navigationTitle(rootWord)
+            .onSubmit {
+                addWord()
+            }
+            .onAppear(perform: startGame)
         }
     }
     
@@ -46,6 +46,18 @@ struct ContentView: View {
             usedWords.insert(clearWord, at: 0)
         }
         newWord = ""
+    }
+    
+    private func startGame() {
+        if let startWordUrl = Bundle.main.url(forResource: "start", withExtension: "txt") {
+            if let startWords = try? String.init(contentsOf: startWordUrl) {
+                let words = startWords.components(separatedBy: "\n")
+                rootWord = words.randomElement() ?? "swiftui"
+                return
+            }
+        }
+        
+        fatalError("Application cannot find start.txt file with starting words")
     }
 }
 
