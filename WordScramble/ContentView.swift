@@ -16,21 +16,30 @@ struct ContentView: View {
     @State private var alertMessage = ""
     @State private var showingAlert = false
     
+    @State private var score = 0
+    
     var body: some View {
         NavigationView {
-            List {
-                Section {
-                    TextField("Enter your word", text: $newWord)
-                        .textInputAutocapitalization(.never)
-                }
-                Section {
-                    ForEach(usedWords, id: \.self) { word in
-                        HStack {
-                            Image(systemName: "\(word.count).circle.fill")
-                            Text(word)
+            VStack {
+                List {
+                    Section {
+                        TextField("Enter your word", text: $newWord)
+                            .textInputAutocapitalization(.never)
+                    }
+                    Section {
+                        ForEach(usedWords, id: \.self) { word in
+                            HStack {
+                                Image(systemName: "\(word.count).circle.fill")
+                                Text(word)
+                            }
                         }
                     }
                 }
+                .listStyle(InsetGroupedListStyle())
+
+                Spacer()
+                Text("Score: \(score)")
+                    .font(.largeTitle)
             }
             .navigationTitle(rootWord)
             .onSubmit {
@@ -40,9 +49,15 @@ struct ContentView: View {
             .alert(alertTitle, isPresented: $showingAlert) {
                 Button("OK") {
                     newWord = ""
+                    score -= 1
                 }
             } message: {
                 Text(alertMessage)
+            }
+            .toolbar {
+                Button("Refresh") {
+                    startGame()
+                }
             }
         }
     }
@@ -51,7 +66,9 @@ struct ContentView: View {
         let clearWord = newWord.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         guard clearWord.count > 1 else { return }
         
-        guard isReal(word: clearWord) && isOrigin(word: clearWord) && isPossible(word: clearWord) else { return }
+        guard isReal(word: clearWord) && isOrigin(word: clearWord) && isPossible(word: clearWord) && differFromRoot(word: clearWord) else { return }
+        
+        score += clearWord.count
         
         withAnimation {
             usedWords.insert(clearWord, at: 0)
@@ -64,6 +81,8 @@ struct ContentView: View {
             if let startWords = try? String.init(contentsOf: startWordUrl) {
                 let words = startWords.components(separatedBy: "\n")
                 rootWord = words.randomElement() ?? "swiftui"
+                usedWords = []
+                score = 0
                 return
             }
         }
@@ -96,6 +115,16 @@ struct ContentView: View {
             }
         }
         
+        return true
+    }
+    
+    private func differFromRoot(word: String) -> Bool {
+        if rootWord == word {
+            alertTitle = "You cannot use root word"
+            alertMessage = "You should come up with your own words"
+            showingAlert = true
+            return false
+        }
         return true
     }
     
